@@ -32,36 +32,44 @@ namespace DeskCandy
             Centered,
             Stretched
         }
-        public static void Set(Uri uri, Style style)
+        public static void Set(string uri, Style style)
         {
-            System.IO.Stream s = new System.Net.WebClient().OpenRead(uri.ToString());
-
-            System.Drawing.Image img = System.Drawing.Image.FromStream(s);
-            string tempPath = Path.Combine(Path.GetTempPath(), "wallpaper.bmp");
-            img.Save(tempPath, System.Drawing.Imaging.ImageFormat.Bmp);
-
-            RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Control Panel\Desktop", true);
-            if (style == Style.Stretched)
+            try
             {
-                key.SetValue(@"WallpaperStyle", 2.ToString());
-                key.SetValue(@"TileWallpaper", 0.ToString());
-            }
+                System.IO.Stream s = new System.Net.WebClient().OpenRead(uri);
 
-            if (style == Style.Centered)
-            {
-                key.SetValue(@"WallpaperStyle", 1.ToString());
-                key.SetValue(@"TileWallpaper", 0.ToString());
-            }
+                System.Drawing.Image img = System.Drawing.Image.FromStream(s);
+                string tempPath = Path.Combine(Path.GetTempPath(), "wallpaper.bmp");
+                img.Save(tempPath, System.Drawing.Imaging.ImageFormat.Bmp);
 
-            if (style == Style.Tiled)
-            {
-                key.SetValue(@"WallpaperStyle", 1.ToString());
-                key.SetValue(@"TileWallpaper", 1.ToString());
+                RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Control Panel\Desktop", true);
+                if (style == Style.Stretched)
+                {
+                    key.SetValue(@"WallpaperStyle", 2.ToString());
+                    key.SetValue(@"TileWallpaper", 0.ToString());
+                }
+
+                if (style == Style.Centered)
+                {
+                    key.SetValue(@"WallpaperStyle", 1.ToString());
+                    key.SetValue(@"TileWallpaper", 0.ToString());
+                }
+
+                if (style == Style.Tiled)
+                {
+                    key.SetValue(@"WallpaperStyle", 1.ToString());
+                    key.SetValue(@"TileWallpaper", 1.ToString());
+                }
+                SystemParametersInfo(SPI_SETDESKWALLPAPER,
+                    0,
+                    tempPath,
+                    SPIF_UPDATEINIFILE | SPIF_SENDWININICHANGE);
             }
-            SystemParametersInfo(SPI_SETDESKWALLPAPER,
-                0,
-                tempPath,
-                SPIF_UPDATEINIFILE | SPIF_SENDWININICHANGE);
-        }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                MainWindow.instance.wallpaperScheduler.NextWallpaper();
+            }
+         }
     }
 }

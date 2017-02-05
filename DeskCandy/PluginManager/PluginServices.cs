@@ -7,13 +7,13 @@ using System.Collections.Generic;
 using System.Linq;
 namespace DeskCandy.PluginManager
 {
-	public class PanelPluginServices
+	public class WallpaperSourceServices
 	{
-		public PanelPluginServices()
+		public WallpaperSourceServices()
 		{
 		}
-		private Types.AvailablePanelPlugins colAvailablePlugins = new Types.AvailablePanelPlugins();
-		public Types.AvailablePanelPlugins AvailablePlugins {
+		private Types.AvailableWallpaperSource colAvailablePlugins = new Types.AvailableWallpaperSource();
+		public Types.AvailableWallpaperSource AvailablePlugins {
 			get { return colAvailablePlugins; }
 			set { colAvailablePlugins = value; }
 		}
@@ -82,7 +82,7 @@ namespace DeskCandy.PluginManager
 	}
 	namespace Types
 	{
-		public class AvailablePanelPlugins : System.Collections.CollectionBase
+		public class AvailableWallpaperSource : System.Collections.CollectionBase
 		{
 			public void Add(Types.AvailablePlugin pluginToAdd)
 			{
@@ -92,7 +92,6 @@ namespace DeskCandy.PluginManager
 			{
 				this.List.Remove(pluginToRemove);
 			}
-
 		}
 		public class AvailablePlugin
 		{
@@ -104,11 +103,19 @@ namespace DeskCandy.PluginManager
 				type = t;
 			}
 
-			public IWallpaperSource MakeInstance()
+			public IWallpaperSource MakeInstance(string Query)
 			{
-				return (IWallpaperSource)Activator.CreateInstance(type);
+                var s = (IWallpaperSource)Activator.CreateInstance(type);
+                s.Query = Query;
+                return s;
 			}
-		}
+            public IWallpaperSource MakeInstance()
+            {
+                var s = (IWallpaperSource)Activator.CreateInstance(type);
+                return s;
+            }
+
+        }
 	}
 }
 

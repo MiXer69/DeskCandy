@@ -26,10 +26,10 @@ namespace DeskCandyLib
         /// </summary>
         string Query { get; set; }
         /// <summary>
-        /// Function Used to return an image url
+        /// Function that refreshes the images
         /// </summary>
         /// <returns></returns>
-        BitmapImage GetImageUrl();
+        void RefreshImages();
         /// <summary>
         /// Called on Init
         /// </summary>

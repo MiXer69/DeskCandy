@@ -3,13 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.ComponentModel;
@@ -28,9 +23,8 @@ namespace DeskCandy.InternalPlugins
     public class Zerochan : IWallpaperSource
     {
         public List<string> AnimeNumbers = new List<string>();
-        public string curNumber;
         public string SearchedQuery;
-        int lastindex = -1;
+        int page = 1;
         /// <summary>
         /// Opis
         /// </summary>
@@ -88,33 +82,35 @@ namespace DeskCandy.InternalPlugins
         public void GetImage(string AnimeName, string number)
         {
             WebClient webClient = new WebClient();
-            Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures) + "\\" + AnimeName);
+            Directory.CreateDirectory(STATIC.ImagesPaths + "\\" + AnimeName);
             webClient.DownloadFileAsync(new Uri(string.Format("http://static.zerochan.net/{0}.full.{1}.jpg", AnimeName, number)), STATIC.ImagesPaths + "\\" + AnimeName + "\\" + number + ".jpg");
+            Console.WriteLine("Downloading to " + STATIC.ImagesPaths + "\\" + AnimeName);
         }
         /// <summary>
-        /// Gets url of the image
+        /// Refreshes Images
         /// </summary>
-        /// <returns>Image for wallpaper</returns>
-        public BitmapImage GetImageUrl()
+        public void RefreshImages()
         {
-            if (curNumber != AnimeNumbers[AnimeNumbers.Count - 1])
+            Console.WriteLine("Refreshing Images...");
+
+            System.IO.DirectoryInfo di = new DirectoryInfo(STATIC.ImagesPaths + "\\" + Query);
+
+            foreach (FileInfo file in di.GetFiles())
             {
-                lastindex++;
-                curNumber = AnimeNumbers[lastindex];
-                return new BitmapImage(new Uri(STATIC.ImagesPaths + "\\" + SearchedQuery + "\\" + curNumber.ToString() + ".jpg"));
+                file.Delete();
             }
-            else {
-                lastindex = 0;
-                curNumber = AnimeNumbers[lastindex];
-                return new BitmapImage(new Uri(STATIC.ImagesPaths + "\\" + SearchedQuery + "\\" + curNumber.ToString() + ".jpg"));
-            }
+            page++;
+            ParseAnimeNumber(Query, page);
+            Console.WriteLine("Done Refreshing Images!");
+
         }
         /// <summary>
         /// Parses Page for Animes
         /// </summary>
-        /// <param name="AnimeName">Name of the ANime/manga</param>
+        /// <param name="AnimeName">Name of the Anime/manga</param>
         public async void ParseAnimeNumber(string AnimeName)
         {
+            Console.WriteLine("Parsing...");
             try
             {
                 HttpClient http = new HttpClient();
@@ -143,8 +139,43 @@ namespace DeskCandy.InternalPlugins
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Anime not found");
+                Console.WriteLine("Anime not found");
             }
+        }
+        public async void ParseAnimeNumber(string AnimeName, int page)
+        {
+            try
+            {
+                HttpClient http = new HttpClient();
+                var response = await http.GetByteArrayAsync(new Uri(string.Format("http://zerochan.net/{0}?p={1}", AnimeName.Replace(' ', '+'), page.ToString())));
+                String source = Encoding.GetEncoding("UTF-8").GetString(response, 0, response.Length - 1);
+                source = WebUtility.HtmlDecode(source);
+                HtmlDocument resultat = new HtmlDocument();
+                resultat.LoadHtml(source);
+                HtmlNode ul = resultat.GetElementbyId("thumbs2");
+                HtmlNodeCollection childList = ul.ChildNodes;
+                foreach (HtmlNode n in childList)
+                {
+                    HtmlNodeCollection il = n.ChildNodes;
+                    foreach (HtmlNode l in il)
+                    {
+                        if (l.HasAttributes)
+                        {
+                            List<char> chars = l.Attributes[0].Value.ToString().ToList<char>();
+                            chars.RemoveAt(0);
+                            string s = new string(chars.ToArray());
+                            AnimeNumbers.Add(s);
+                            GetImage(AnimeName, s);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Page Limit probably overloaded");
+            }
+
+
         }
     }
 }

@@ -10,7 +10,8 @@ namespace DeskCandy.PluginManager
     public class ServicesManager
     {
         System.Timers.Timer t = new System.Timers.Timer();
-        private PanelPluginServices avPanelServices = new PanelPluginServices();
+        private WallpaperSourceServices avPanelServices = new WallpaperSourceServices();
+       
         public ServicesManager()
         {
             avPanelServices.RegisterInternalPLugin(typeof(InternalPlugins.Zerochan));

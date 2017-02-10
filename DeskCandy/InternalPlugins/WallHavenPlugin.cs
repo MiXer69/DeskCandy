@@ -1,26 +1,21 @@
-﻿using System;
+﻿using DeskCandyLib;
+using HtmlAgilityPack;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Net;
 using System.Net.Http;
-using System.Text.RegularExpressions;
-using System.Windows;
-using System.ComponentModel;
-using System.IO;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using DeskCandyLib;
-using HtmlAgilityPack;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace DeskCandy.InternalPlugins
 {
-    /* ZerochanParser - Parser for zerochan
-     * Remember to credit me after using this in your app: 
-     * Piotr "MiXer" Mikstacki => ja.to.mixer@gmail.com
-     * */
-    public class Zerochan : IWallpaperSource
+    /// <summary>
+    /// base URL https://alpha.wallhaven.cc/search?q=Anime&page=2
+    /// link to wallpaper https://wallpapers.wallhaven.cc/wallpapers/full/wallhaven-id.jpg
+    /// </summary>
+    class WallHavenPlugin
     {
         public List<string> AnimeNumbers = new List<string>();
         public string SearchedQuery;
@@ -32,7 +27,7 @@ namespace DeskCandy.InternalPlugins
         {
             get
             {
-                return "Zerochan Wallpaper Downloader. Please fill in \"query\" field for service to actually work. Well, you need at least something to search for!. Be careful! default query is Boku no Pico. Nah, just kidding";
+                return "Wallhaven Wallpaper Downloader. Please fill in \"query\" field for service to actually work.";
             }
         }
         /// <summary>
@@ -42,7 +37,7 @@ namespace DeskCandy.InternalPlugins
         {
             get
             {
-                return "Zerochan";
+                return "Wallhaven";
             }
         }
 
@@ -62,7 +57,7 @@ namespace DeskCandy.InternalPlugins
         {
             get
             {
-                return "Zerochan.net";
+                return "https://alpha.wallhaven.cc/";
             }
         }
         /// <summary>
@@ -72,19 +67,19 @@ namespace DeskCandy.InternalPlugins
         public void Init(string query)
         {
             Query = query;
-            ParseAnimeNumber(query, page);
+            ParseWallpaperNumber(query, page);
         }
         /// <summary>
         /// Gets image 
         /// </summary>
-        /// <param name="AnimeName">Name of the anime</param>
-        /// <param name="number">anime number</param>
-        public void GetImage(string AnimeName, string number)
+        /// <param name="name">Name of the query</param>
+        /// <param name="number">wallpaper number</param>
+        public void GetImage(string name,string number)
         {
             WebClient webClient = new WebClient();
-            Directory.CreateDirectory(STATIC.ImagesPaths + "\\" + AnimeName);
-            webClient.DownloadFileAsync(new Uri(string.Format("http://static.zerochan.net/{0}.full.{1}.jpg", AnimeName, number)), STATIC.ImagesPaths + "\\" + AnimeName + "\\" + number + ".jpg");
-            Console.WriteLine("Downloading to " + STATIC.ImagesPaths + "\\" + AnimeName);
+            Directory.CreateDirectory(STATIC.ImagesPaths + "\\" + name);
+            webClient.DownloadFileAsync(new Uri(string.Format("https://wallpapers.wallhaven.cc/wallpapers/full/wallhaven-{0}.jpg", number)), STATIC.ImagesPaths + "\\" + AnimeName + "\\" + number + ".jpg");
+            Console.WriteLine("Downloading to " + STATIC.ImagesPaths + "\\" + name);
         }
         /// <summary>
         /// Refreshes Images
@@ -100,7 +95,7 @@ namespace DeskCandy.InternalPlugins
                 file.Delete();
             }
             page++;
-            ParseAnimeNumber(Query, page);
+            ParseWallpaperNumber(Query, page);
             Console.WriteLine("Done Refreshing Images!");
 
         }
@@ -108,13 +103,13 @@ namespace DeskCandy.InternalPlugins
         /// Parses Page for Animes
         /// </summary>
         /// <param name="AnimeName">Name of the Anime/manga</param>
-        public async void ParseAnimeNumber(string AnimeName)
+        public async void ParseWallpaperNumber(string Query)
         {
             Console.WriteLine("Parsing...");
             try
             {
                 HttpClient http = new HttpClient();
-                var response = await http.GetByteArrayAsync(new Uri(string.Format("http://zerochan.net/{0}", AnimeName.Replace(' ', '+'))));
+                var response = await http.GetByteArrayAsync(new Uri(string.Format(" https://alpha.wallhaven.cc/search?q={0}&page={1}", Query.Replace(' ', '+'), page.ToString())));
                 String source = Encoding.GetEncoding("UTF-8").GetString(response, 0, response.Length - 1);
                 source = WebUtility.HtmlDecode(source);
                 HtmlDocument resultat = new HtmlDocument();
@@ -132,7 +127,7 @@ namespace DeskCandy.InternalPlugins
                             chars.RemoveAt(0);
                             string s = new string(chars.ToArray());
                             AnimeNumbers.Add(s);
-                            GetImage(AnimeName, s);
+                            GetImage(Query, s);
                         }
                     }
                 }
@@ -142,12 +137,12 @@ namespace DeskCandy.InternalPlugins
                 Console.WriteLine("Anime not found");
             }
         }
-        public async void ParseAnimeNumber(string AnimeName, int page)
+        public async void ParseWallpaperNumber(string Query, int page)
         {
             try
             {
                 HttpClient http = new HttpClient();
-                var response = await http.GetByteArrayAsync(new Uri(string.Format("http://zerochan.net/{0}?p={1}", AnimeName.Replace(' ', '+'), page.ToString())));
+                var response = await http.GetByteArrayAsync(new Uri(string.Format(" https://alpha.wallhaven.cc/search?q={0}&page={1}", Query.Replace(' ', '+'), page.ToString())));
                 String source = Encoding.GetEncoding("UTF-8").GetString(response, 0, response.Length - 1);
                 source = WebUtility.HtmlDecode(source);
                 HtmlDocument resultat = new HtmlDocument();
@@ -165,7 +160,7 @@ namespace DeskCandy.InternalPlugins
                             chars.RemoveAt(0);
                             string s = new string(chars.ToArray());
                             AnimeNumbers.Add(s);
-                            GetImage(AnimeName, s);
+                            GetImage(Query, s);
                         }
                     }
                 }
